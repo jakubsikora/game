@@ -1,17 +1,29 @@
 /**************************************************
 ** NODE.JS REQUIREMENTS
 **************************************************/
-var util = require("util"),					// Utility resources (logging, object inspection, etc)
-	io = require("socket.io"),				// Socket.IO
+var express = require("express"),
+	path = require("path"),
+	app = express(),
+	server = require("http").createServer(app),
+	util = require("util"),					// Utility resources (logging, object inspection, etc)
+	io = require("socket.io").listen(server),				// Socket.IO
 	Player = require("./Player").Player;	// Player class
 
+server.listen(process.env.PORT || 3000);
+
+app.use(express.static(path.join(__dirname,'public')));
+// // Create a simple Express application
+// app.configure(function() {
+// 	// Turn down the logging activity
+// 	app.use(express.logger('dev'));
+
+// 	// Serve static html, js, css, and image files from the 'public' directory
+//});
 
 /**************************************************
 ** GAME VARIABLES
 **************************************************/
-var socket,		// Socket controller
-	players;	// Array of connected players
-
+var players;	// Array of connected players
 
 /**************************************************
 ** GAME INITIALISATION
@@ -20,16 +32,13 @@ function init() {
 	// Create an empty array to store players
 	players = [];
 
-	// Set up Socket.IO to listen on port 8000
-	socket = io.listen(8000);
-
 	// Configure Socket.IO
-	socket.configure(function() {
+	io.configure(function() {
 		// Only use WebSockets
-		socket.set("transports", ["websocket"]);
+		io.set("transports", ["websocket"]);
 
 		// Restrict log output
-		socket.set("log level", 2);
+		io.set("log level", 2);
 	});
 
 	// Start listening for events
@@ -42,7 +51,7 @@ function init() {
 **************************************************/
 var setEventHandlers = function() {
 	// Socket.IO
-	socket.sockets.on("connection", onSocketConnection);
+	io.sockets.on("connection", onSocketConnection);
 };
 
 // New socket connection
@@ -93,7 +102,7 @@ function onNewPlayer(data) {
 		existingPlayer = players[i];
 		this.emit("new player", {id: existingPlayer.id, x: existingPlayer.getX(), y: existingPlayer.getY()});
 	};
-		
+
 	// Add new player to the players array
 	players.push(newPlayer);
 };
@@ -128,7 +137,7 @@ function playerById(id) {
 		if (players[i].id == id)
 			return players[i];
 	};
-	
+
 	return false;
 };
 

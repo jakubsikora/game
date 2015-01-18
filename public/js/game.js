@@ -34,7 +34,9 @@ function init() {
 	localPlayer = new Player(startX, startY);
 
 	// Initialise socket connection
-	socket = io.connect("http://localhost", {port: 8000, transports: ["websocket"]});
+	console.log(window.location.hostname);
+	// socket = io.connect("http://localhost", {port: 3000, transports: ["websocket"]});
+	socket = io.connect(window.location.hostname);
 
 	// Initialise remote players array
 	remotePlayers = [];
@@ -199,6 +201,6 @@ function playerById(id) {
 		if (remotePlayers[i].id == id)
 			return remotePlayers[i];
 	};
-	
+
 	return false;
 };
