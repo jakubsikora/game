@@ -76,6 +76,9 @@ var setEventHandlers = function() {
 
 	// Reset game
 	socket.on("reset game", onResetGame);
+
+	// Change color
+	socket.on("change color", onChangeColor);
 };
 
 function onResetGame() {
@@ -165,6 +168,19 @@ function onMovePlayer(data) {
 	movePlayer.setY(data.y);
 };
 
+function onChangeColor(data) {
+	var player = playerById(data.id);
+
+	if (!player) {
+		console.log("Player not found: "+data.id);
+		return;
+	};
+
+	console.log('changing color from', player.getColor(), data.color);
+
+	player.setColor(data.color);
+}
+
 // Remove player
 function onRemovePlayer(data) {
 	var removePlayer = playerById(data.id);
@@ -234,7 +250,6 @@ function draw() {
 	var i;
 	for (i = 0; i < remotePlayers.length; i++) {
 		remotePlayers[i].draw(ctx);
-		debugger;
 	};
 };
 

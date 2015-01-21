@@ -16,7 +16,9 @@ app.use(express.static(path.join(__dirname,'public')));
 /**************************************************
 ** GAME VARIABLES
 **************************************************/
-var players;	// Array of connected players
+var players,	// Array of connected players
+		colors = ['red', 'green', 'blue', 'orange', 'yellow'],
+		usedColors = [];
 
 /**************************************************
 ** GAME INITIALISATION
@@ -79,6 +81,10 @@ function onClientDisconnect() {
 
 	var removePlayer = playerById(this.id);
 
+	console.log('before remove usedColors', usedColors);
+	usedColors.splice(usedColors.indexOf(removePlayer.getColor()), 1);
+	console.log('after remove usedColors', usedColors);
+
 	// Player not found
 	if (!removePlayer) {
 		util.log("Player not found: "+this.id);
@@ -94,12 +100,24 @@ function onClientDisconnect() {
 
 // New player has joined
 function onNewPlayer(data) {
-	console.log('onNewPlayer', data);
+	var newColor;
+
 	// Create a new player
 	var newPlayer = new Player(data.x, data.y);
 	newPlayer.id = this.id;
-	newPlayer.setColor(data.color);
-	console.log('onNewPlayer', newPlayer.getColor());
+	console.log('before usedColors', usedColors, data.color);
+	if (usedColors.indexOf(data.color) === -1) {
+		usedColors.push(data.color);
+		newPlayer.setColor(data.color);
+	} else {
+		newColor = colors.diff(usedColors)[0];
+		usedColors.push(newColor);
+		newPlayer.setColor(newColor);
+		//TODO: Send event to change color
+		console.log('send event to change color', newColor);
+		this.emit("change color", {id: newPlayer.id, color: newColor});
+	}
+	console.log('after usedColors', usedColors);
 
 	// Broadcast new player to connected socket clients
 	this.broadcast.emit("new player", {
@@ -164,6 +182,10 @@ function playerById(id) {
 	};
 
 	return false;
+};
+
+Array.prototype.diff = function(a) {
+  return this.filter(function(i) {return a.indexOf(i) < 0;});
 };
 
 
