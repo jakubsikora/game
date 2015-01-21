@@ -1,10 +1,12 @@
 /**************************************************
 ** GAME PLAYER CLASS
 **************************************************/
-var Player = function(startX, startY) {
+var Player = function(startX, startY, startColor) {
 	var x = startX,
-		y = startY,
-		id;
+			y = startY,
+			id,
+			points = 1,
+			color = startColor;
 
 	// Getters and setters
 	var getX = function() {
@@ -23,13 +25,34 @@ var Player = function(startX, startY) {
 		y = newY;
 	};
 
+	var getPoints = function() {
+		return points;
+	};
+
+	var setPoints = function(newPoints) {
+		points = newPoints;
+	};
+
+	var setColor = function(newColor) {
+		color = newColor;
+	};
+
+	var getColor = function() {
+		return color;
+	};
+
 	// Define which variables and methods can be accessed
 	return {
 		getX: getX,
 		getY: getY,
 		setX: setX,
 		setY: setY,
-		id: id
+		id: id,
+		color: color,
+		getPoints: getPoints,
+		setPoints: setPoints,
+		getColor: getColor,
+		setColor: setColor
 	}
 };
 

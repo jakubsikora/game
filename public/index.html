@@ -11,12 +11,15 @@
 	</head>
 
 	<body>
+		<button onclick="reset()">Reset</button>
+		<div id="hud"></div>
 		<canvas id="gameCanvas"></canvas>
 		<script src="/socket.io/socket.io.js"></script>
 		<script src="js/requestAnimationFrame.js"></script>
 		<script src="js/Keys.js"></script>
 		<script src="js/Player.js"></script>
-		<script src="js/game.js"></script>
+		<script src="js/AI.js"></script>
+		<script src="js/client.js"></script>
 		<script>
 			// Initialise the game
 			init();
