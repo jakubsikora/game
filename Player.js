@@ -5,8 +5,10 @@ var Player = function(startX, startY, startColor) {
 	var x = startX,
 			y = startY,
 			id,
-			points = 1,
-			color = startColor;
+			color = startColor,
+			number,
+			admin = false,
+			points;
 
 	// Getters and setters
 	var getX = function() {
@@ -41,6 +43,22 @@ var Player = function(startX, startY, startColor) {
 		return color;
 	};
 
+	var setNumber = function(newNumber) {
+		number = newNumber;
+	};
+
+	var getNumber = function() {
+		return number;
+	};
+
+	var setAdmin = function(isAdmin) {
+		admin = isAdmin;
+	};
+
+	var getAdmin = function() {
+		return admin;
+	};
+
 	// Define which variables and methods can be accessed
 	return {
 		getX: getX,
@@ -52,7 +70,11 @@ var Player = function(startX, startY, startColor) {
 		getPoints: getPoints,
 		setPoints: setPoints,
 		getColor: getColor,
-		setColor: setColor
+		setColor: setColor,
+		getNumber: getNumber,
+		setNumber: setNumber,
+		getAdmin: getAdmin,
+		setAdmin: setAdmin
 	}
 };
 

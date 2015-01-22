@@ -8,6 +8,7 @@ var express = require("express"),
 	util = require("util"),					// Utility resources (logging, object inspection, etc)
 	io = require("socket.io").listen(server),				// Socket.IO
 	Player = require("./Player").Player;	// Player class
+	Gold = require("./Gold").Gold;	// Gold class
 
 server.listen(process.env.PORT || 3000);
 
@@ -67,12 +68,14 @@ function onSocketConnection(client) {
 };
 
 function onResetGame() {
-	util.log("Game reseted");
-
 	// TODO: reset points
+	var player = playerById(this.id);
 
-	this.broadcast.emit("reset game");
-	this.emit("reset game");
+	if (player.getAdmin()) {
+		this.broadcast.emit("reset game");
+		this.emit("reset game");
+		util.log("Game reseted");
+	}
 };
 
 // Socket client has disconnected
@@ -81,9 +84,7 @@ function onClientDisconnect() {
 
 	var removePlayer = playerById(this.id);
 
-	console.log('before remove usedColors', usedColors);
 	usedColors.splice(usedColors.indexOf(removePlayer.getColor()), 1);
-	console.log('after remove usedColors', usedColors);
 
 	// Player not found
 	if (!removePlayer) {
@@ -100,12 +101,23 @@ function onClientDisconnect() {
 
 // New player has joined
 function onNewPlayer(data) {
-	var newColor;
+	var newColor
+		, newNumber = players.length + 1;
 
 	// Create a new player
 	var newPlayer = new Player(data.x, data.y);
 	newPlayer.id = this.id;
-	console.log('before usedColors', usedColors, data.color);
+	newPlayer.setNumber(newNumber);
+	newPlayer.setAdmin(newNumber === 1 ? true: false);
+	newPlayer.setPoints(0);
+
+	// TODO one method
+	this.emit("init player", {
+		number: newPlayer.getNumber(),
+		admin: newPlayer.getAdmin(),
+		points: newPlayer.getPoints(),
+	});
+
 	if (usedColors.indexOf(data.color) === -1) {
 		usedColors.push(data.color);
 		newPlayer.setColor(data.color);
@@ -113,31 +125,34 @@ function onNewPlayer(data) {
 		newColor = colors.diff(usedColors)[0];
 		usedColors.push(newColor);
 		newPlayer.setColor(newColor);
-		//TODO: Send event to change color
-		console.log('send event to change color', newColor);
-		this.emit("change color", {id: newPlayer.id, color: newColor});
+
+		this.emit("change color", {color: newColor});
 	}
-	console.log('after usedColors', usedColors);
 
 	// Broadcast new player to connected socket clients
 	this.broadcast.emit("new player", {
 		id: newPlayer.id,
 		x: newPlayer.getX(),
 		y: newPlayer.getY(),
-		color: newPlayer.getColor()
+		color: newPlayer.getColor(),
+		number: newPlayer.getNumber(),
+		admin: newPlayer.getAdmin(),
+		points: newPlayer.getPoints()
 	});
 
 	// Send existing players to the new player
 	var i, existingPlayer;
 	for (i = 0; i < players.length; i++) {
 		existingPlayer = players[i];
-		console.log('existingPlayer', existingPlayer.getColor());
 
 		this.emit("new player", {
 			id: existingPlayer.id,
 			x: existingPlayer.getX(),
 			y: existingPlayer.getY(),
-			color: existingPlayer.getColor()
+			color: existingPlayer.getColor(),
+			number: existingPlayer.getNumber(),
+			admin: existingPlayer.getAdmin(),
+			points: existingPlayer.getPoints()
 		});
 	};
 
@@ -163,12 +178,6 @@ function onMovePlayer(data) {
 	// Broadcast updated position to connected socket clients
 	this.broadcast.emit("move player", {id: movePlayer.id, x: movePlayer.getX(), y: movePlayer.getY()});
 };
-
-// TODO
-function onPointsChange(data) {
-
-}
-
 
 /**************************************************
 ** GAME HELPER FUNCTIONS

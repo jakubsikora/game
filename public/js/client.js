@@ -19,8 +19,8 @@ function init() {
 	ctx = canvas.getContext("2d");
 
 	// Maximise the canvas
-	canvas.width = window.innerWidth;
-	canvas.height = window.innerHeight;
+	canvas.width = 600;
+	canvas.height = 600;
 
 	// Initialise keyboard controls
 	keys = new Keys();
@@ -30,7 +30,7 @@ function init() {
 	// placed right on the egde of the screen
 	var startX = Math.round(Math.random()*(canvas.width-5)),
 			startY = Math.round(Math.random()*(canvas.height-5)),
-			colors = ['red', 'green', 'blue', 'orange', 'yellow'];
+			colors = ['red', 'green', 'blue', 'orange', 'black'];
 
 	// Initialise the local player
 	localPlayer = new Player(
@@ -56,9 +56,6 @@ var setEventHandlers = function() {
 	window.addEventListener("keydown", onKeydown, false);
 	window.addEventListener("keyup", onKeyup, false);
 
-	// Window resize
-	window.addEventListener("resize", onResize, false);
-
 	// Socket connection successful
 	socket.on("connect", onSocketConnected);
 
@@ -79,6 +76,8 @@ var setEventHandlers = function() {
 
 	// Change color
 	socket.on("change color", onChangeColor);
+
+	socket.on("init player", onInitPlayer);
 };
 
 function onResetGame() {
@@ -88,15 +87,13 @@ function onResetGame() {
 
 	localPlayer.setX(startX);
 	localPlayer.setY(startY);
+
+	//TODO move to the server
 	localPlayer.setPoints(0);
 
 	console.log('player changed position after reset');
 
 	socket.emit("move player", {x: localPlayer.getX(), y: localPlayer.getY()});
-
-	console.log(localPlayer.getPoints());
-	console.log(remotePlayers[0].getPoints());
-
 };
 
 // Keyboard key down
@@ -111,13 +108,6 @@ function onKeyup(e) {
 	if (localPlayer) {
 		keys.onKeyUp(e);
 	};
-};
-
-// Browser window resize
-function onResize(e) {
-	// Maximise the canvas
-	canvas.width = window.innerWidth;
-	canvas.height = window.innerHeight;
 };
 
 function reset() {
@@ -148,6 +138,9 @@ function onNewPlayer(data) {
 	// Initialise the new player
 	var newPlayer = new Player(data.x, data.y, data.color);
 	newPlayer.id = data.id;
+	newPlayer.setNumber(data.number);
+	newPlayer.setAdmin(data.admin);
+	newPlayer.setPoints(data.points);
 
 	// Add new player to the remote players array
 	remotePlayers.push(newPlayer);
@@ -168,17 +161,14 @@ function onMovePlayer(data) {
 	movePlayer.setY(data.y);
 };
 
+function onInitPlayer(data) {
+	localPlayer.setNumber(data.number);
+	localPlayer.setAdmin(data.admin);
+	localPlayer.setPoints(data.points);
+}
+
 function onChangeColor(data) {
-	var player = playerById(data.id);
-
-	if (!player) {
-		console.log("Player not found: "+data.id);
-		return;
-	};
-
-	console.log('changing color from', player.getColor(), data.color);
-
-	player.setColor(data.color);
+	localPlayer.setColor(data.color);
 }
 
 // Remove player
@@ -213,7 +203,7 @@ function animate() {
 **************************************************/
 function update() {
 	// Update local player and check for change
-	if (localPlayer.update(keys)) {
+	if (localPlayer.update(keys, canvas)) {
 		// Send local player data to the game server
 		socket.emit("move player", {
 			x: localPlayer.getX(),
@@ -242,15 +232,19 @@ function draw() {
 	document.getElementById('hud').innerHTML = '';
 
 	// Draw the local player
-	localPlayer.draw(ctx);
+	localPlayer.draw(ctx, true);
 
 	//ai.draw(ctx);
 
 	// Draw the remote players
 	var i;
 	for (i = 0; i < remotePlayers.length; i++) {
-		remotePlayers[i].draw(ctx);
+		remotePlayers[i].draw(ctx, false);
 	};
+
+	if (localPlayer.getAdmin()) {
+		document.getElementById('hud').innerHTML += '<br/><button onclick="reset()">Reset</button>';
+	}
 };
 
 

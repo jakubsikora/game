@@ -6,8 +6,10 @@ var Player = function(startX, startY, startColor) {
 			y = startY,
 			id,
 			moveAmount = 2,
-			points = 1,
-			color = startColor;
+			points,
+			color = startColor,
+			number,
+			admin = false;
 
 	// Getters and setters
 	var getX = function() {
@@ -42,11 +44,28 @@ var Player = function(startX, startY, startColor) {
 		color = newColor;
 	};
 
+	var getNumber = function() {
+		return number;
+	};
+
+	var setNumber = function(newNumber) {
+		number = newNumber;
+	};
+
+	var getAdmin = function() {
+		return admin;
+	};
+
+	var setAdmin = function(newAdmin) {
+		admin = newAdmin;
+	};
+
 	// Update player position
-	var update = function(keys) {
+	var update = function(keys, canvas) {
+
 		// Previous position
 		var prevX = x,
-			prevY = y;
+				prevY = y;
 
 		// Up key takes priority over down
 		if (keys.up) {
@@ -62,14 +81,33 @@ var Player = function(startX, startY, startColor) {
 			x += moveAmount;
 		};
 
+		// Check canvas borders
+		if (x > canvas.clientWidth) {
+			x = x % canvas.clientWidth;
+		} else if (x < 0) {
+			x = canvas.clientWidth + (x % canvas.clientWidth);
+		}
+
+		if (y > canvas.clientHeight) {
+			y = y % canvas.clientHeight;
+		} else if (y < 0) {
+			y = canvas.clientHeight + (y % canvas.clientHeight);
+		}
+
 		return (prevX != x || prevY != y) ? true : false;
 	};
 
 	// Draw player
-	var draw = function(ctx) {
+	var draw = function(ctx, localPlayer) {
 		ctx.fillStyle = color;
 		ctx.fillRect(x-5, y-5, 10, 10);
-		document.getElementById('hud').innerHTML += '<span>Player: ' + this.id + '</span><br/>';
+		document.getElementById('hud').innerHTML +=
+			'<span style="background: ' + color + ';color:#FFF;">' +
+			'Gracz: ' + number  +
+			' - Pkt: (' + points  + ')' +
+			'' + (admin ? ' (Admin)' : '') +
+			'' + (localPlayer ? ' <-' : '') +
+			'</span><br/>';
 	};
 
 
@@ -84,6 +122,10 @@ var Player = function(startX, startY, startColor) {
 		getPoints: getPoints,
 		setPoints: setPoints,
 		getColor: getColor,
-		setColor: setColor
+		setColor: setColor,
+		getNumber: getNumber,
+		setNumber: setNumber,
+		getAdmin: getAdmin,
+		setAdmin: setAdmin
 	}
 };
