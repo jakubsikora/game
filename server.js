@@ -19,7 +19,8 @@ app.use(express.static(path.join(__dirname,'public')));
 **************************************************/
 var players,	// Array of connected players
 		colors = ['red', 'green', 'blue', 'orange', 'yellow'],
-		usedColors = [];
+		usedColors = [],
+		gold;
 
 /**************************************************
 ** GAME INITIALISATION
@@ -65,6 +66,8 @@ function onSocketConnection(client) {
 
 	// Listen for reset game message
 	client.on("reset game", onResetGame);
+
+	client.on("spawn gold", onSpawnGold);
 };
 
 function onResetGame() {
@@ -177,6 +180,21 @@ function onMovePlayer(data) {
 
 	// Broadcast updated position to connected socket clients
 	this.broadcast.emit("move player", {id: movePlayer.id, x: movePlayer.getX(), y: movePlayer.getY()});
+};
+
+function onSpawnGold(data) {
+	var player = playerById(this.id);
+
+	if (player.getAdmin()) {
+		if (gold) {
+			gold.setX(data.x);
+			gold.setY(data.y);
+		} else {
+			gold = new Gold(data.x, data.y);
+		}
+
+		console.log('onSpawnGold', gold.getX(), gold.getY());
+	}
 };
 
 /**************************************************

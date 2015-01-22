@@ -72,14 +72,14 @@ var Player = function(startX, startY, startColor) {
 			y -= moveAmount;
 		} else if (keys.down) {
 			y += moveAmount;
-		};
+		}
 
 		// Left key takes priority over right
 		if (keys.left) {
 			x -= moveAmount;
 		} else if (keys.right) {
 			x += moveAmount;
-		};
+		}
 
 		// Check canvas borders
 		if (x > canvas.clientWidth) {
@@ -94,7 +94,7 @@ var Player = function(startX, startY, startColor) {
 			y = canvas.clientHeight + (y % canvas.clientHeight);
 		}
 
-		return (prevX != x || prevY != y) ? true : false;
+		return (prevX !== x || prevY !== y) ? true : false;
 	};
 
 	// Draw player

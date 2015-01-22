@@ -28,7 +28,7 @@ var Gold = function(startX, startY) {
     getY: getY,
     setX: setX,
     setY: setY
-  }
+  };
 };
 
 // Export the Player class so you can use it in

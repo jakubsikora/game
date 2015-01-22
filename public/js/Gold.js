@@ -23,8 +23,20 @@ var Gold = function(startX, startY) {
   };
 
   var draw = function(ctx) {
-    ctx.fillStyle = color;
-    ctx.fillRect(x-5, y-5, 10, 10);
+    var radius = 10;
+
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, 2*Math.PI);
+    ctx.fillStyle = 'gold';
+    ctx.fill();
+    ctx.lineWidth = radius / 5;
+    ctx.strokeStyle = '#d1a700';
+    ctx.stroke();
+
+    ctx.font = '9pt Arial';
+    ctx.fillStyle = '#ad7900';
+    ctx.textAlign = 'center';
+    ctx.fillText('£', x, y+3);
   };
 
   // Define which variables and methods can be accessed

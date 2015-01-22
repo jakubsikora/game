@@ -7,7 +7,7 @@ var canvas,			// Canvas DOM element
 		localPlayer,	// Local player
 		remotePlayers,	// Remote players
 		socket,			// Socket connection
-		ai;
+		gold;
 
 
 /**************************************************
@@ -78,6 +78,8 @@ var setEventHandlers = function() {
 	socket.on("change color", onChangeColor);
 
 	socket.on("init player", onInitPlayer);
+
+	socket.on("spawn gold", onSpawnGold);
 };
 
 function onResetGame() {
@@ -91,10 +93,18 @@ function onResetGame() {
 	//TODO move to the server
 	localPlayer.setPoints(0);
 
-	console.log('player changed position after reset');
-
 	socket.emit("move player", {x: localPlayer.getX(), y: localPlayer.getY()});
 };
+
+function spawnGold() {
+	console.log('spawnGold');
+	var startX = Math.round(Math.random()*(canvas.width-5)),
+			startY = Math.round(Math.random()*(canvas.height-5));
+
+	gold = new Gold(startX, startY);
+
+	socket.emit("spawn gold", {x: gold.getX(), y: gold.getY()});
+}
 
 // Keyboard key down
 function onKeydown(e) {
@@ -161,10 +171,24 @@ function onMovePlayer(data) {
 	movePlayer.setY(data.y);
 };
 
+function onSpawnGold(data) {
+	console.log('onSpawnGold', data.x, data.y, gold);
+	// if (gold) {
+	// 	gold.setX(data.x);
+	// 	gold.setY(data.y);
+	// } else {
+	// 	gold = new Gold(data.x, data.y);
+	// }
+}
+
 function onInitPlayer(data) {
 	localPlayer.setNumber(data.number);
 	localPlayer.setAdmin(data.admin);
 	localPlayer.setPoints(data.points);
+
+	if (localPlayer.getAdmin()) {
+		spawnGold();
+	}
 }
 
 function onChangeColor(data) {
@@ -184,7 +208,6 @@ function onRemovePlayer(data) {
 	// Remove player from array
 	remotePlayers.splice(remotePlayers.indexOf(removePlayer), 1);
 };
-
 
 /**************************************************
 ** GAME ANIMATION LOOP
@@ -244,6 +267,10 @@ function draw() {
 
 	if (localPlayer.getAdmin()) {
 		document.getElementById('hud').innerHTML += '<br/><button onclick="reset()">Reset</button>';
+	}
+
+	if (gold) {
+		gold.draw(ctx);
 	}
 };
 
