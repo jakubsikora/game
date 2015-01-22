@@ -249,16 +249,6 @@ function update() {
 			x: localPlayer.getX(),
 			y: localPlayer.getY()
 		});
-
-		// Collision
-		// if (
-		// 	localPlayer.getX() <= (ai.getX() + 10)
-		// 	&& ai.getX() <= (localPlayer.getX() + 10)
-		// 	&& localPlayer.getY() <= (ai.getY() + 10)
-		// 	&& ai.getY() <= (localPlayer.getY() + 10)
-		// ) {
-		// 	ai.reset(canvas);
-		// }
 	};
 };
 

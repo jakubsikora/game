@@ -202,6 +202,16 @@ function onMovePlayer(data) {
 	movePlayer.setX(data.x);
 	movePlayer.setY(data.y);
 
+	// Collision
+	if (
+		movePlayer.getX() <= (gold.getX() + 10)
+		&& gold.getX() <= (movePlayer.getX() + 10)
+		&& movePlayer.getY() <= (gold.getY() + 10)
+		&& gold.getY() <= (movePlayer.getY() + 10)
+	) {
+		console.log('collision');
+	}
+
 	// Broadcast updated position to connected socket clients
 	this.broadcast.emit("move player", {id: movePlayer.id, x: movePlayer.getX(), y: movePlayer.getY()});
 };
