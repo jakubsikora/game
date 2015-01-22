@@ -203,17 +203,42 @@ function onMovePlayer(data) {
 	movePlayer.setY(data.y);
 
 	// Collision
-	if (
-		movePlayer.getX() <= (gold.getX() + 10)
-		&& gold.getX() <= (movePlayer.getX() + 10)
-		&& movePlayer.getY() <= (gold.getY() + 10)
-		&& gold.getY() <= (movePlayer.getY() + 10)
-	) {
-		console.log('collision');
+	if (data.collision) {
+		movePlayer.increasePoints();
+
+		var newX = Math.round(Math.random()*(data.width-5)),
+				newY = Math.round(Math.random()*(data.height-5));
+
+		gold.setX(newX);
+		gold.setY(newY);
+
+		this.broadcast.emit('spawn gold', {
+			x: gold.getX(),
+			y: gold.getY()
+		});
+
+		this.emit('spawn gold', {
+			x: gold.getX(),
+			y: gold.getY()
+		});
+
+		this.emit("update points", {
+			id: movePlayer.id,
+			points: movePlayer.getPoints()
+		});
+
+		this.broadcast.emit("update points", {
+			id: movePlayer.id,
+			points: movePlayer.getPoints()
+		});
 	}
 
 	// Broadcast updated position to connected socket clients
-	this.broadcast.emit("move player", {id: movePlayer.id, x: movePlayer.getX(), y: movePlayer.getY()});
+	this.broadcast.emit("move player", {
+		id: movePlayer.id,
+		x: movePlayer.getX(),
+		y: movePlayer.getY()
+	});
 };
 
 function onSpawnGold(data) {

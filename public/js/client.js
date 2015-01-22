@@ -82,6 +82,8 @@ var setEventHandlers = function() {
 	socket.on("spawn gold", onSpawnGold);
 
 	socket.on("update admin", onUpdateAdmin);
+
+	socket.on("update points", onUpdatePoints);
 };
 
 function onResetGame() {
@@ -194,6 +196,11 @@ function onInitPlayer(data) {
 	}
 }
 
+function onUpdatePoints(data) {
+	var playerPoints = playerById(data.id);
+	playerPoints.setPoints(data.points);
+}
+
 function onUpdateAdmin(data) {
 	var newAdmin = playerById(data.id);
 
@@ -242,14 +249,33 @@ function animate() {
 ** GAME UPDATE
 **************************************************/
 function update() {
+	var collision = false;
+
 	// Update local player and check for change
 	if (localPlayer.update(keys, canvas)) {
+
+		// Check collision
+		if (gold) {
+			if (
+				localPlayer.getX() <= (gold.getX() + 10)
+				&& gold.getX() <= (localPlayer.getX() + 10)
+				&& localPlayer.getY() <= (gold.getY() + 10)
+				&& gold.getY() <= (localPlayer.getY() + 10)
+			) {
+				collision = true;
+				gold = null;
+			}
+		}
+
 		// Send local player data to the game server
 		socket.emit("move player", {
 			x: localPlayer.getX(),
-			y: localPlayer.getY()
+			y: localPlayer.getY(),
+			width: canvas.clientWidth,
+			height: canvas.clientHeight,
+			collision: collision
 		});
-	};
+	}
 };
 
 
@@ -263,8 +289,6 @@ function draw() {
 
 	// Draw the local player
 	localPlayer.draw(ctx, true);
-
-	//ai.draw(ctx);
 
 	// Draw the remote players
 	var i;

@@ -59,6 +59,10 @@ var Player = function(startX, startY, startColor) {
 		return admin;
 	};
 
+	var increasePoints = function() {
+		points = points + 1;
+	};
+
 	// Define which variables and methods can be accessed
 	return {
 		getX: getX,
@@ -74,8 +78,9 @@ var Player = function(startX, startY, startColor) {
 		getNumber: getNumber,
 		setNumber: setNumber,
 		getAdmin: getAdmin,
-		setAdmin: setAdmin
-	}
+		setAdmin: setAdmin,
+		increasePoints: increasePoints
+	};
 };
 
 // Export the Player class so you can use it in
