@@ -99,10 +99,20 @@ var Player = function(startX, startY, startColor) {
 
 	// Draw player
 	var draw = function(ctx, localPlayer) {
+		var css;
+
+		if (localPlayer) {
+			css = 'font-weight: bold;background:' + color + ';color:#FFF;';
+		} else {
+			css = 'color:' + color + ';';
+		}
+
 		ctx.fillStyle = color;
 		ctx.fillRect(x-5, y-5, 10, 10);
+
+
 		document.getElementById('hud').innerHTML +=
-			'<span style="background: ' + color + ';color:#FFF;">' +
+			'<span style="' + css + '">' +
 			'Gracz: ' + number  +
 			' - Pkt: (' + points  + ')' +
 			'' + (admin ? ' (Admin)' : '') +
@@ -126,6 +136,7 @@ var Player = function(startX, startY, startColor) {
 		getNumber: getNumber,
 		setNumber: setNumber,
 		getAdmin: getAdmin,
-		setAdmin: setAdmin
+		setAdmin: setAdmin,
+		id: id
 	}
 };

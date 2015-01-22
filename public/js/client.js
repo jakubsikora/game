@@ -80,6 +80,8 @@ var setEventHandlers = function() {
 	socket.on("init player", onInitPlayer);
 
 	socket.on("spawn gold", onSpawnGold);
+
+	socket.on("update admin", onUpdateAdmin);
 };
 
 function onResetGame() {
@@ -173,22 +175,37 @@ function onMovePlayer(data) {
 
 function onSpawnGold(data) {
 	console.log('onSpawnGold', data.x, data.y, gold);
-	// if (gold) {
-	// 	gold.setX(data.x);
-	// 	gold.setY(data.y);
-	// } else {
-	// 	gold = new Gold(data.x, data.y);
-	// }
+	if (gold) {
+		gold.setX(data.x);
+		gold.setY(data.y);
+	} else {
+		gold = new Gold(data.x, data.y);
+	}
 }
 
 function onInitPlayer(data) {
 	localPlayer.setNumber(data.number);
 	localPlayer.setAdmin(data.admin);
 	localPlayer.setPoints(data.points);
+	localPlayer.id = data.id;
 
 	if (localPlayer.getAdmin()) {
 		spawnGold();
 	}
+}
+
+function onUpdateAdmin(data) {
+	var newAdmin = playerById(data.id);
+
+	console.log('onUpdateAdmin', newAdmin);
+
+	// Player not found
+	if (!newAdmin) {
+		console.log("Player not found: "+data.id);
+		return;
+	};
+
+	newAdmin.setAdmin(true);
 }
 
 function onChangeColor(data) {
@@ -266,7 +283,9 @@ function draw() {
 	};
 
 	if (localPlayer.getAdmin()) {
-		document.getElementById('hud').innerHTML += '<br/><button onclick="reset()">Reset</button>';
+		document.getElementById('reset').style.display = 'block';
+	} else {
+		document.getElementById('reset').style.display = 'none';
 	}
 
 	if (gold) {
@@ -282,9 +301,13 @@ function draw() {
 function playerById(id) {
 	var i;
 	for (i = 0; i < remotePlayers.length; i++) {
-		if (remotePlayers[i].id == id)
+		if (remotePlayers[i].id === id)
 			return remotePlayers[i];
 	};
+
+	if (localPlayer.id === id) {
+		return localPlayer;
+	}
 
 	return false;
 };

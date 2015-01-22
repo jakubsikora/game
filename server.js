@@ -20,7 +20,8 @@ app.use(express.static(path.join(__dirname,'public')));
 var players,	// Array of connected players
 		colors = ['red', 'green', 'blue', 'orange', 'yellow'],
 		usedColors = [],
-		gold;
+		gold,
+		playerNumber = 1;
 
 /**************************************************
 ** GAME INITIALISATION
@@ -100,26 +101,48 @@ function onClientDisconnect() {
 
 	// Broadcast removed player to connected socket clients
 	this.broadcast.emit("remove player", {id: this.id});
+
+	if (players.length === 0) {
+		gold = null;
+	} else {
+		if (removePlayer.getAdmin()) {
+			console.log('admin disconnected');
+			players[0].setAdmin(true);
+			this.broadcast.emit("update admin", {id: players[0].id});
+		}
+	}
 };
 
 // New player has joined
 function onNewPlayer(data) {
-	var newColor
-		, newNumber = players.length + 1;
+	var newColor;
 
 	// Create a new player
 	var newPlayer = new Player(data.x, data.y);
 	newPlayer.id = this.id;
-	newPlayer.setNumber(newNumber);
-	newPlayer.setAdmin(newNumber === 1 ? true: false);
+	newPlayer.setNumber(playerNumber);
+	newPlayer.setAdmin(playerNumber === 1 ? true : false);
 	newPlayer.setPoints(0);
+
+	// Admin fallback
+	if (players.length === 0) {
+		newPlayer.setAdmin(true);
+	}
 
 	// TODO one method
 	this.emit("init player", {
 		number: newPlayer.getNumber(),
 		admin: newPlayer.getAdmin(),
 		points: newPlayer.getPoints(),
+		id: newPlayer.id
 	});
+
+	if (gold) {
+		this.emit('spawn gold', {
+			x: gold.getX(),
+			y: gold.getY()
+		});
+	}
 
 	if (usedColors.indexOf(data.color) === -1) {
 		usedColors.push(data.color);
@@ -161,6 +184,7 @@ function onNewPlayer(data) {
 
 	// Add new player to the players array
 	players.push(newPlayer);
+	playerNumber++;
 };
 
 // Player has moved
@@ -194,6 +218,10 @@ function onSpawnGold(data) {
 		}
 
 		console.log('onSpawnGold', gold.getX(), gold.getY());
+		this.broadcast.emit('spawn gold', {
+			x: gold.getX(),
+			y: gold.getY()
+		});
 	}
 };
 
