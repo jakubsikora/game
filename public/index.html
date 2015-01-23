@@ -6,14 +6,23 @@
 		<title>Goldrush!</title>
 		<meta charset="utf-8">
 
+		<link href="https://fonts.googleapis.com/css?family=Lato:300,400,700,300italic,400italic,700italic" rel="stylesheet" type="text/css">
+
 		<link rel="stylesheet" href="style/reset.css">
 		<link rel="stylesheet" href="style/game.css">
 	</head>
 
 	<body>
-		<div id="hud"></div>
-		<button id="reset" onclick="reset()">Reset</button>
-		<canvas id="gameCanvas" style="border: 1px solid #555"></canvas>
+		<div class="container">
+			<div class="header">
+				<div id="hud"></div>
+			</div>
+			<div class="content">
+				<button id="reset" onclick="reset()">Reset</button>
+				<canvas id="gameCanvas" style="border: 1px solid #555"></canvas>
+			</div>
+		</div>
+
 		<script src="/socket.io/socket.io.js"></script>
 		<script src="js/requestAnimationFrame.js"></script>
 		<script src="js/Keys.js"></script>

@@ -19,7 +19,7 @@ function init() {
 	ctx = canvas.getContext("2d");
 
 	// Maximise the canvas
-	canvas.width = 600;
+	canvas.width = 800;
 	canvas.height = 600;
 
 	// Initialise keyboard controls
@@ -30,7 +30,7 @@ function init() {
 	// placed right on the egde of the screen
 	var startX = Math.round(Math.random()*(canvas.width-5)),
 			startY = Math.round(Math.random()*(canvas.height-5)),
-			colors = ['red', 'green', 'blue', 'orange', 'black'];
+			colors = ['red', 'green', 'blue', 'orange', 'black', 'pink'];
 
 	// Initialise the local player
 	localPlayer = new Player(
@@ -101,7 +101,6 @@ function onResetGame() {
 };
 
 function spawnGold() {
-	console.log('spawnGold');
 	var startX = Math.round(Math.random()*(canvas.width-5)),
 			startY = Math.round(Math.random()*(canvas.height-5));
 
@@ -125,6 +124,7 @@ function onKeyup(e) {
 };
 
 function reset() {
+	spawnGold();
 	socket.emit("reset game");
 };
 
@@ -306,7 +306,6 @@ function draw() {
 		gold.draw(ctx);
 	}
 };
-
 
 /**************************************************
 ** GAME HELPER FUNCTIONS

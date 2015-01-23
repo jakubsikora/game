@@ -1,7 +1,27 @@
 body {
+  font-family: "Lato","Helvetica Neue",Helvetica,Arial,sans-serif;
+  font-weight: 700;
 	overflow: hidden;
 }
 
 canvas {
 	display: block;
+}
+
+.container {
+
+}
+
+.header {
+  font-size: 0.9em;
+  margin: 10px auto;
+  width: 800px;
+  height: 150px;
+  max-height: 150px;
+  overflow: auto;
+}
+
+.content {
+  width: 800px;
+  margin: 0 auto;
 }

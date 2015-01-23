@@ -5,7 +5,7 @@ var Player = function(startX, startY, startColor) {
 	var x = startX,
 			y = startY,
 			id,
-			moveAmount = 2,
+			moveAmount = 3,
 			points,
 			color = startColor,
 			number,
@@ -99,7 +99,8 @@ var Player = function(startX, startY, startColor) {
 
 	// Draw player
 	var draw = function(ctx, localPlayer) {
-		var css;
+		var css,
+				html;
 
 		if (localPlayer) {
 			css = 'font-weight: bold;background:' + color + ';color:#FFF;';
@@ -110,16 +111,14 @@ var Player = function(startX, startY, startColor) {
 		ctx.fillStyle = color;
 		ctx.fillRect(x-5, y-5, 10, 10);
 
+		html =  '<div style="padding:5px;' + css + '">';
+		html += '	<div style="display:inline;">Gracz ' + number  + '</div>';
+		html += '	<div style="display:inline;">, Punkty (' + points  + ')</div>';
+		html += '	<div style="display:inline;">' + (admin ? ', (Admin)' : '') + '</div>';
+		html += '</div>';
 
-		document.getElementById('hud').innerHTML +=
-			'<span style="' + css + '">' +
-			'Gracz: ' + number  +
-			' - Pkt: (' + points  + ')' +
-			'' + (admin ? ' (Admin)' : '') +
-			'' + (localPlayer ? ' <-' : '') +
-			'</span><br/>';
+		document.getElementById('hud').innerHTML += html;
 	};
-
 
 	// Define which variables and methods can be accessed
 	return {

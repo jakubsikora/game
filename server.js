@@ -18,7 +18,7 @@ app.use(express.static(path.join(__dirname,'public')));
 ** GAME VARIABLES
 **************************************************/
 var players,	// Array of connected players
-		colors = ['red', 'green', 'blue', 'orange', 'yellow'],
+		colors = ['red', 'green', 'blue', 'orange', 'black', 'pink'],
 		usedColors = [],
 		gold,
 		playerNumber = 1;
@@ -76,6 +76,21 @@ function onResetGame() {
 	var player = playerById(this.id);
 
 	if (player.getAdmin()) {
+		for (var i = 0; i < players.length; i++) {
+			var existingPlayer = players[i];
+			existingPlayer.setPoints(0);
+
+			this.emit("update points", {
+				id: existingPlayer.id,
+				points: existingPlayer.getPoints()
+			});
+
+			this.broadcast.emit("update points", {
+				id: existingPlayer.id,
+				points: existingPlayer.getPoints()
+			});
+		}
+
 		this.broadcast.emit("reset game");
 		this.emit("reset game");
 		util.log("Game reseted");
