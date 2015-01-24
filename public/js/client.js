@@ -1,26 +1,27 @@
-/**************************************************
-** GAME VARIABLES
-**************************************************/
+/**
+ *
+ */
 var canvas,			// Canvas DOM element
 		ctx,			// Canvas rendering context
 		keys,			// Keyboard input
 		localPlayer,	// Local player
 		remotePlayers,	// Remote players
 		socket,			// Socket connection
-		gold;
+		gold,
+		CANVAS_WIDTH = 800,
+		CANVAS_HEIGHT = 500;
 
-
-/**************************************************
-** GAME INITIALISATION
-**************************************************/
+/**
+ *
+ */
 function init() {
 	// Declare the canvas and rendering context
 	canvas = document.getElementById("gameCanvas");
 	ctx = canvas.getContext("2d");
 
 	// Maximise the canvas
-	canvas.width = 800;
-	canvas.height = 600;
+	canvas.width = CANVAS_WIDTH;
+	canvas.height = CANVAS_HEIGHT;
 
 	// Initialise keyboard controls
 	keys = new Keys();
@@ -29,14 +30,10 @@ function init() {
 	// The minus 5 (half a player size) stops the player being
 	// placed right on the egde of the screen
 	var startX = Math.round(Math.random()*(canvas.width-5)),
-			startY = Math.round(Math.random()*(canvas.height-5)),
-			colors = ['red', 'green', 'blue', 'orange', 'black', 'pink'];
+			startY = Math.round(Math.random()*(canvas.height-5));
 
 	// Initialise the local player
-	localPlayer = new Player(
-		startX,
-		startY,
-		colors[Math.floor(Math.random() * colors.length)]);
+	localPlayer = new Player(startX, startY);
 
 	// Initialise socket connection
 	socket = io.connect(window.location.hostname);
@@ -48,10 +45,10 @@ function init() {
 	setEventHandlers();
 };
 
-/**************************************************
-** GAME EVENT HANDLERS
-**************************************************/
-var setEventHandlers = function() {
+/**
+ *
+ */
+function setEventHandlers() {
 	// Keyboard
 	window.addEventListener("keydown", onKeydown, false);
 	window.addEventListener("keyup", onKeyup, false);
@@ -74,168 +71,22 @@ var setEventHandlers = function() {
 	// Reset game
 	socket.on("reset game", onResetGame);
 
-	// Change color
-	socket.on("change color", onChangeColor);
-
+	// Initialization of the local player
 	socket.on("init player", onInitPlayer);
 
+	// Spawning new gold
 	socket.on("spawn gold", onSpawnGold);
 
+	// Update admin status
 	socket.on("update admin", onUpdateAdmin);
 
+	// Update points
 	socket.on("update points", onUpdatePoints);
 };
 
-function onResetGame() {
-	// Reset and send new position
-	var startX = Math.round(Math.random()*(canvas.width-5)),
-			startY = Math.round(Math.random()*(canvas.height-5));
-
-	localPlayer.setX(startX);
-	localPlayer.setY(startY);
-
-	//TODO move to the server
-	localPlayer.setPoints(0);
-
-	socket.emit("move player", {x: localPlayer.getX(), y: localPlayer.getY()});
-};
-
-function spawnGold() {
-	var startX = Math.round(Math.random()*(canvas.width-5)),
-			startY = Math.round(Math.random()*(canvas.height-5));
-
-	gold = new Gold(startX, startY);
-
-	socket.emit("spawn gold", {x: gold.getX(), y: gold.getY()});
-}
-
-// Keyboard key down
-function onKeydown(e) {
-	if (localPlayer) {
-		keys.onKeyDown(e);
-	};
-};
-
-// Keyboard key up
-function onKeyup(e) {
-	if (localPlayer) {
-		keys.onKeyUp(e);
-	};
-};
-
-function reset() {
-	spawnGold();
-	socket.emit("reset game");
-};
-
-// Socket connected
-function onSocketConnected() {
-	console.log("Connected to socket server");
-	// Send local player data to the game server
-	socket.emit("new player", {
-		x: localPlayer.getX(),
-		y: localPlayer.getY(),
-		color: localPlayer.getColor()
-	});
-};
-
-// Socket disconnected
-function onSocketDisconnect() {
-	console.log("Disconnected from socket server");
-};
-
-// New player
-function onNewPlayer(data) {
-	console.log("New player connected: "+data.id);
-	console.log(data);
-
-	// Initialise the new player
-	var newPlayer = new Player(data.x, data.y, data.color);
-	newPlayer.id = data.id;
-	newPlayer.setNumber(data.number);
-	newPlayer.setAdmin(data.admin);
-	newPlayer.setPoints(data.points);
-
-	// Add new player to the remote players array
-	remotePlayers.push(newPlayer);
-};
-
-// Move player
-function onMovePlayer(data) {
-	var movePlayer = playerById(data.id);
-
-	// Player not found
-	if (!movePlayer) {
-		console.log("Player not found: "+data.id);
-		return;
-	};
-
-	// Update player position
-	movePlayer.setX(data.x);
-	movePlayer.setY(data.y);
-};
-
-function onSpawnGold(data) {
-	console.log('onSpawnGold', data.x, data.y, gold);
-	if (gold) {
-		gold.setX(data.x);
-		gold.setY(data.y);
-	} else {
-		gold = new Gold(data.x, data.y);
-	}
-}
-
-function onInitPlayer(data) {
-	localPlayer.setNumber(data.number);
-	localPlayer.setAdmin(data.admin);
-	localPlayer.setPoints(data.points);
-	localPlayer.id = data.id;
-
-	if (localPlayer.getAdmin()) {
-		spawnGold();
-	}
-}
-
-function onUpdatePoints(data) {
-	var playerPoints = playerById(data.id);
-	playerPoints.setPoints(data.points);
-}
-
-function onUpdateAdmin(data) {
-	var newAdmin = playerById(data.id);
-
-	console.log('onUpdateAdmin', newAdmin);
-
-	// Player not found
-	if (!newAdmin) {
-		console.log("Player not found: "+data.id);
-		return;
-	};
-
-	newAdmin.setAdmin(true);
-}
-
-function onChangeColor(data) {
-	localPlayer.setColor(data.color);
-}
-
-// Remove player
-function onRemovePlayer(data) {
-	var removePlayer = playerById(data.id);
-
-	// Player not found
-	if (!removePlayer) {
-		console.log("Player not found: "+data.id);
-		return;
-	};
-
-	// Remove player from array
-	remotePlayers.splice(remotePlayers.indexOf(removePlayer), 1);
-};
-
-/**************************************************
-** GAME ANIMATION LOOP
-**************************************************/
+/**
+ *
+ */
 function animate() {
 	update();
 	draw();
@@ -244,10 +95,9 @@ function animate() {
 	window.requestAnimFrame(animate);
 };
 
-
-/**************************************************
-** GAME UPDATE
-**************************************************/
+/**
+ *
+ */
 function update() {
 	var collision = false;
 
@@ -278,10 +128,9 @@ function update() {
 	}
 };
 
-
-/**************************************************
-** GAME DRAW
-**************************************************/
+/**
+ *
+ */
 function draw() {
 	// Wipe the canvas clean
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -307,20 +156,22 @@ function draw() {
 	}
 };
 
-/**************************************************
-** GAME HELPER FUNCTIONS
-**************************************************/
-// Find player by ID
-function playerById(id) {
-	var i;
-	for (i = 0; i < remotePlayers.length; i++) {
-		if (remotePlayers[i].id === id)
-			return remotePlayers[i];
-	};
+/**
+ *
+ */
+function spawnGold() {
+	var startX = Math.round(Math.random()*(canvas.width-5)),
+			startY = Math.round(Math.random()*(canvas.height-5));
 
-	if (localPlayer.id === id) {
-		return localPlayer;
-	}
+	gold = new Gold(startX, startY);
 
-	return false;
+	socket.emit("spawn gold", {x: gold.getX(), y: gold.getY()});
+}
+
+/**
+ *
+ */
+function reset() {
+	spawnGold();
+	socket.emit("reset game");
 };

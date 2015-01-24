@@ -14,10 +14,10 @@ canvas {
 
 .header {
   font-size: 0.9em;
-  margin: 10px auto;
+  margin: 5px auto;
   width: 800px;
-  height: 150px;
-  max-height: 150px;
+  height: 100px;
+  max-height: 100px;
   overflow: auto;
 }
 

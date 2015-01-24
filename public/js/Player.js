@@ -1,13 +1,13 @@
-/**************************************************
-** GAME PLAYER CLASS
-**************************************************/
-var Player = function(startX, startY, startColor) {
+/**
+ *
+ */
+var Player = function(startX, startY) {
 	var x = startX,
 			y = startY,
 			id,
 			moveAmount = 3,
 			points,
-			color = startColor,
+			color,
 			number,
 			admin = false;
 

@@ -1,31 +1,31 @@
-/**************************************************
-** NODE.JS REQUIREMENTS
-**************************************************/
+/**
+ *
+ */
 var express = require("express"),
-	path = require("path"),
-	app = express(),
-	server = require("http").createServer(app),
-	util = require("util"),					// Utility resources (logging, object inspection, etc)
-	io = require("socket.io").listen(server),				// Socket.IO
-	Player = require("./Player").Player;	// Player class
-	Gold = require("./Gold").Gold;	// Gold class
+		path = require("path"),
+		app = express(),
+		server = require("http").createServer(app),
+		util = require("util"),					// Utility resources (logging, object inspection, etc)
+		io = require("socket.io").listen(server),				// Socket.IO
+		Player = require("./Player").Player;	// Player class
+		Gold = require("./Gold").Gold;	// Gold class
 
 server.listen(process.env.PORT || 3000);
 
 app.use(express.static(path.join(__dirname,'public')));
 
-/**************************************************
-** GAME VARIABLES
-**************************************************/
-var players,	// Array of connected players
+/**
+ *
+ */
+var players = [],	// Array of connected players
 		colors = ['red', 'green', 'blue', 'orange', 'black', 'pink'],
 		usedColors = [],
-		gold,
+		gold = null,
 		playerNumber = 1;
 
-/**************************************************
-** GAME INITIALISATION
-**************************************************/
+/**
+ *
+ */
 function init() {
 	// Create an empty array to store players
 	players = [];
@@ -43,16 +43,17 @@ function init() {
 	setEventHandlers();
 };
 
-
-/**************************************************
-** GAME EVENT HANDLERS
-**************************************************/
+/**
+ *
+ */
 var setEventHandlers = function() {
 	// Socket.IO
 	io.sockets.on("connection", onSocketConnection);
 };
 
-// New socket connection
+/**
+ *
+ */
 function onSocketConnection(client) {
 	util.log("New player has connected: "+client.id);
 
@@ -71,13 +72,16 @@ function onSocketConnection(client) {
 	client.on("spawn gold", onSpawnGold);
 };
 
+/**
+ *
+ */
 function onResetGame() {
-	// TODO: reset points
-	var player = playerById(this.id);
+	var player = playerById(this.id),
+			existingPlayer;
 
 	if (player.getAdmin()) {
 		for (var i = 0; i < players.length; i++) {
-			var existingPlayer = players[i];
+			existingPlayer = players[i];
 			existingPlayer.setPoints(0);
 
 			this.emit("update points", {
@@ -97,7 +101,9 @@ function onResetGame() {
 	}
 };
 
-// Socket client has disconnected
+/**
+ *
+ */
 function onClientDisconnect() {
 	util.log("Player has disconnected: "+this.id);
 
@@ -121,35 +127,38 @@ function onClientDisconnect() {
 		gold = null;
 	} else {
 		if (removePlayer.getAdmin()) {
-			console.log('admin disconnected');
 			players[0].setAdmin(true);
 			this.broadcast.emit("update admin", {id: players[0].id});
 		}
 	}
 };
 
-// New player has joined
+/**
+ *
+ */
 function onNewPlayer(data) {
-	var newColor;
-
 	// Create a new player
-	var newPlayer = new Player(data.x, data.y);
+	var newPlayer = new Player(data.x, data.y),
+			newColor = selectColor(),
+			existingPlayer;
+
 	newPlayer.id = this.id;
 	newPlayer.setNumber(playerNumber);
 	newPlayer.setAdmin(playerNumber === 1 ? true : false);
 	newPlayer.setPoints(0);
+	newPlayer.setColor(newColor);
 
 	// Admin fallback
 	if (players.length === 0) {
 		newPlayer.setAdmin(true);
 	}
 
-	// TODO one method
 	this.emit("init player", {
 		number: newPlayer.getNumber(),
 		admin: newPlayer.getAdmin(),
 		points: newPlayer.getPoints(),
-		id: newPlayer.id
+		id: newPlayer.id,
+		color: newPlayer.getColor()
 	});
 
 	if (gold) {
@@ -157,17 +166,6 @@ function onNewPlayer(data) {
 			x: gold.getX(),
 			y: gold.getY()
 		});
-	}
-
-	if (usedColors.indexOf(data.color) === -1) {
-		usedColors.push(data.color);
-		newPlayer.setColor(data.color);
-	} else {
-		newColor = colors.diff(usedColors)[0];
-		usedColors.push(newColor);
-		newPlayer.setColor(newColor);
-
-		this.emit("change color", {color: newColor});
 	}
 
 	// Broadcast new player to connected socket clients
@@ -182,8 +180,7 @@ function onNewPlayer(data) {
 	});
 
 	// Send existing players to the new player
-	var i, existingPlayer;
-	for (i = 0; i < players.length; i++) {
+	for (var i = 0; i < players.length; i++) {
 		existingPlayer = players[i];
 
 		this.emit("new player", {
@@ -202,10 +199,30 @@ function onNewPlayer(data) {
 	playerNumber++;
 };
 
-// Player has moved
+/**
+ *
+ */
+function selectColor() {
+	var newColor = colors[Math.floor(Math.random() * colors.length)];
+
+	if (usedColors.indexOf(newColor) === -1) {
+		usedColors.push(newColor);
+	} else {
+		newColor = colors.diff(usedColors)[0];
+		usedColors.push(newColor);
+	}
+
+	return newColor;
+}
+
+/**
+ *
+ */
 function onMovePlayer(data) {
 	// Find player in array
-	var movePlayer = playerById(this.id);
+	var movePlayer = playerById(this.id),
+			newX,
+			newY;
 
 	// Player not found
 	if (!movePlayer) {
@@ -221,8 +238,8 @@ function onMovePlayer(data) {
 	if (data.collision) {
 		movePlayer.increasePoints();
 
-		var newX = Math.round(Math.random()*(data.width-5)),
-				newY = Math.round(Math.random()*(data.height-5));
+		newX = Math.round(Math.random()*(data.width-5));
+		newY = Math.round(Math.random()*(data.height-5));
 
 		gold.setX(newX);
 		gold.setY(newY);
@@ -256,6 +273,9 @@ function onMovePlayer(data) {
 	});
 };
 
+/**
+ *
+ */
 function onSpawnGold(data) {
 	var player = playerById(this.id);
 
@@ -267,7 +287,6 @@ function onSpawnGold(data) {
 			gold = new Gold(data.x, data.y);
 		}
 
-		console.log('onSpawnGold', gold.getX(), gold.getY());
 		this.broadcast.emit('spawn gold', {
 			x: gold.getX(),
 			y: gold.getY()
@@ -275,13 +294,11 @@ function onSpawnGold(data) {
 	}
 };
 
-/**************************************************
-** GAME HELPER FUNCTIONS
-**************************************************/
-// Find player by ID
+/**
+ *
+ */
 function playerById(id) {
-	var i;
-	for (i = 0; i < players.length; i++) {
+	for (var i = 0; i < players.length; i++) {
 		if (players[i].id == id)
 			return players[i];
 	};
@@ -289,12 +306,15 @@ function playerById(id) {
 	return false;
 };
 
+/**
+ *
+ */
 Array.prototype.diff = function(a) {
   return this.filter(function(i) {return a.indexOf(i) < 0;});
 };
 
 
-/**************************************************
-** RUN THE GAME
-**************************************************/
+/**
+ *
+ */
 init();
