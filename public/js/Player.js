@@ -98,7 +98,7 @@ var Player = function(startX, startY) {
 	};
 
 	// Draw player
-	var draw = function(ctx, localPlayer) {
+	var draw = function(ctx, localPlayer, finished) {
 		var css,
 				html;
 
@@ -108,9 +108,6 @@ var Player = function(startX, startY) {
 			css = 'color:' + color + ';';
 		}
 
-		ctx.fillStyle = color;
-		ctx.fillRect(x-5, y-5, 10, 10);
-
 		html =  '<div style="padding:5px;' + css + '">';
 		html += '	<div style="display:inline;">Gracz ' + number  + '</div>';
 		html += '	<div style="display:inline;">, Punkty (' + points  + ')</div>';
@@ -118,6 +115,11 @@ var Player = function(startX, startY) {
 		html += '</div>';
 
 		document.getElementById('hud').innerHTML += html;
+
+		if (!finished) {
+			ctx.fillStyle = color;
+			ctx.fillRect(x-5, y-5, 10, 10);
+		}
 	};
 
 	// Define which variables and methods can be accessed

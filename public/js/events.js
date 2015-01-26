@@ -57,7 +57,6 @@ function onMovePlayer(data) {
  *
  */
 function onSpawnGold(data) {
-  console.log('onSpawnGold', data.x, data.y, gold);
   if (gold) {
     gold.setX(data.x);
     gold.setY(data.y);
@@ -85,6 +84,7 @@ function onInitPlayer(data) {
  *
  */
 function onUpdatePoints(data) {
+  console.log('updating points', data);
   var playerPoints = playerById(data.id);
   playerPoints.setPoints(data.points);
 }
@@ -144,6 +144,9 @@ function onKeyup(e) {
  *
  */
 function onResetGame() {
+  gameFinished = false;
+  winner = null;
+
   // Reset and send new position
   var startX = Math.round(Math.random()*(canvas.width-5)),
       startY = Math.round(Math.random()*(canvas.height-5));
@@ -154,3 +157,18 @@ function onResetGame() {
 
   socket.emit("move player", {x: localPlayer.getX(), y: localPlayer.getY()});
 };
+
+/**
+ *
+ */
+function onServerFull() {
+  serverFull = true;
+}
+
+/**
+ *
+ */
+function onGameFinished(data) {
+  gameFinished = true;
+  winner = data.winner;
+}

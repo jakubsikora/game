@@ -4,12 +4,15 @@
 var canvas,			// Canvas DOM element
 		ctx,			// Canvas rendering context
 		keys,			// Keyboard input
+		serverFull = false,
 		localPlayer,	// Local player
 		remotePlayers,	// Remote players
 		socket,			// Socket connection
 		gold,
 		CANVAS_WIDTH = 800,
-		CANVAS_HEIGHT = 500;
+		CANVAS_HEIGHT = 500,
+		gameFinished = false,
+		winner;
 
 /**
  *
@@ -59,6 +62,8 @@ function setEventHandlers() {
 	// Socket disconnection
 	socket.on("disconnect", onSocketDisconnect);
 
+	socket.on("server full", onServerFull);
+
 	// New player message received
 	socket.on("new player", onNewPlayer);
 
@@ -82,14 +87,28 @@ function setEventHandlers() {
 
 	// Update points
 	socket.on("update points", onUpdatePoints);
+
+	socket.on("game finished", onGameFinished);
 };
 
 /**
  *
  */
 function animate() {
-	update();
-	draw();
+	if (serverFull) {
+		document.getElementById('hud').innerHTML = 'Serwer jest pełny.';
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+	} else if(gameFinished) {
+		document.getElementById('hud').innerHTML = '';
+		document.getElementById('hud').innerHTML += 'Gra zakończona. Zwyciężył: Gracz ' + winner;
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+		localPlayer.draw(ctx, true, gameFinished);
+
+	} else {
+		update();
+		draw();
+	}
 
 	// Request a new animation frame using Paul Irish's shim
 	window.requestAnimFrame(animate);

@@ -21,7 +21,11 @@ var players = [],	// Array of connected players
 		colors = ['red', 'green', 'blue', 'orange', 'black', 'pink'],
 		usedColors = [],
 		gold = null,
-		playerNumber = 1;
+		playerNumber = 1,
+		maxPlayers = 2,
+		gameFinished = false,
+		maxPoints = 5,
+		winner;
 
 /**
  *
@@ -41,6 +45,7 @@ function init() {
 
 	// Start listening for events
 	setEventHandlers();
+
 };
 
 /**
@@ -55,21 +60,27 @@ var setEventHandlers = function() {
  *
  */
 function onSocketConnection(client) {
-	util.log("New player has connected: "+client.id);
+	if (players.length === maxPlayers) {
+		// Listen for new player message
+		client.on("new player", onNewPlayer);
 
-	// Listen for client disconnected
-	client.on("disconnect", onClientDisconnect);
+	} else {
+		util.log("New player has connected: "+client.id);
 
-	// Listen for new player message
-	client.on("new player", onNewPlayer);
+		// Listen for client disconnected
+		client.on("disconnect", onClientDisconnect);
 
-	// Listen for move player message
-	client.on("move player", onMovePlayer);
+		// Listen for new player message
+		client.on("new player", onNewPlayer);
 
-	// Listen for reset game message
-	client.on("reset game", onResetGame);
+		// Listen for move player message
+		client.on("move player", onMovePlayer);
 
-	client.on("spawn gold", onSpawnGold);
+		// Listen for reset game message
+		client.on("reset game", onResetGame);
+
+		client.on("spawn gold", onSpawnGold);
+	}
 };
 
 /**
@@ -97,6 +108,9 @@ function onResetGame() {
 
 		this.broadcast.emit("reset game");
 		this.emit("reset game");
+		gameFinished = false;
+		winner = null;
+
 		util.log("Game reseted");
 	}
 };
@@ -109,13 +123,13 @@ function onClientDisconnect() {
 
 	var removePlayer = playerById(this.id);
 
-	usedColors.splice(usedColors.indexOf(removePlayer.getColor()), 1);
-
 	// Player not found
 	if (!removePlayer) {
 		util.log("Player not found: "+this.id);
 		return;
 	};
+
+	usedColors.splice(usedColors.indexOf(removePlayer.getColor()), 1);
 
 	// Remove player from players array
 	players.splice(players.indexOf(removePlayer), 1);
@@ -137,66 +151,77 @@ function onClientDisconnect() {
  *
  */
 function onNewPlayer(data) {
-	// Create a new player
-	var newPlayer = new Player(data.x, data.y),
-			newColor = selectColor(),
-			existingPlayer;
+	// Check max players
+	if (players.length === maxPlayers) {
+		this.emit("server full");
+	} else {
+		if (gameFinished) {
+			this.emit("game finished", {
+				winner: winner
+			});
+		} else {
+			// Create a new player
+			var newPlayer = new Player(data.x, data.y),
+					newColor = selectColor(),
+					existingPlayer;
 
-	newPlayer.id = this.id;
-	newPlayer.setNumber(playerNumber);
-	newPlayer.setAdmin(playerNumber === 1 ? true : false);
-	newPlayer.setPoints(0);
-	newPlayer.setColor(newColor);
+			newPlayer.id = this.id;
+			newPlayer.setNumber(playerNumber);
+			newPlayer.setAdmin(playerNumber === 1 ? true : false);
+			newPlayer.setPoints(0);
+			newPlayer.setColor(newColor);
 
-	// Admin fallback
-	if (players.length === 0) {
-		newPlayer.setAdmin(true);
+			// Admin fallback
+			if (players.length === 0) {
+				newPlayer.setAdmin(true);
+			}
+
+			this.emit("init player", {
+				number: newPlayer.getNumber(),
+				admin: newPlayer.getAdmin(),
+				points: newPlayer.getPoints(),
+				id: newPlayer.id,
+				color: newPlayer.getColor()
+			});
+
+			if (gold) {
+				this.emit('spawn gold', {
+					x: gold.getX(),
+					y: gold.getY()
+				});
+			}
+
+			// Broadcast new player to connected socket clients
+			this.broadcast.emit("new player", {
+				id: newPlayer.id,
+				x: newPlayer.getX(),
+				y: newPlayer.getY(),
+				color: newPlayer.getColor(),
+				number: newPlayer.getNumber(),
+				admin: newPlayer.getAdmin(),
+				points: newPlayer.getPoints()
+			});
+
+			// Send existing players to the new player
+			for (var i = 0; i < players.length; i++) {
+				existingPlayer = players[i];
+
+				this.emit("new player", {
+					id: existingPlayer.id,
+					x: existingPlayer.getX(),
+					y: existingPlayer.getY(),
+					color: existingPlayer.getColor(),
+					number: existingPlayer.getNumber(),
+					admin: existingPlayer.getAdmin(),
+					points: existingPlayer.getPoints()
+				});
+			};
+
+			// Add new player to the players array
+			players.push(newPlayer);
+			playerNumber++;
+		}
 	}
-
-	this.emit("init player", {
-		number: newPlayer.getNumber(),
-		admin: newPlayer.getAdmin(),
-		points: newPlayer.getPoints(),
-		id: newPlayer.id,
-		color: newPlayer.getColor()
-	});
-
-	if (gold) {
-		this.emit('spawn gold', {
-			x: gold.getX(),
-			y: gold.getY()
-		});
-	}
-
-	// Broadcast new player to connected socket clients
-	this.broadcast.emit("new player", {
-		id: newPlayer.id,
-		x: newPlayer.getX(),
-		y: newPlayer.getY(),
-		color: newPlayer.getColor(),
-		number: newPlayer.getNumber(),
-		admin: newPlayer.getAdmin(),
-		points: newPlayer.getPoints()
-	});
-
-	// Send existing players to the new player
-	for (var i = 0; i < players.length; i++) {
-		existingPlayer = players[i];
-
-		this.emit("new player", {
-			id: existingPlayer.id,
-			x: existingPlayer.getX(),
-			y: existingPlayer.getY(),
-			color: existingPlayer.getColor(),
-			number: existingPlayer.getNumber(),
-			admin: existingPlayer.getAdmin(),
-			points: existingPlayer.getPoints()
-		});
-	};
-
-	// Add new player to the players array
-	players.push(newPlayer);
-	playerNumber++;
 };
 
 /**
@@ -238,22 +263,6 @@ function onMovePlayer(data) {
 	if (data.collision) {
 		movePlayer.increasePoints();
 
-		newX = Math.round(Math.random()*(data.width-5));
-		newY = Math.round(Math.random()*(data.height-5));
-
-		gold.setX(newX);
-		gold.setY(newY);
-
-		this.broadcast.emit('spawn gold', {
-			x: gold.getX(),
-			y: gold.getY()
-		});
-
-		this.emit('spawn gold', {
-			x: gold.getX(),
-			y: gold.getY()
-		});
-
 		this.emit("update points", {
 			id: movePlayer.id,
 			points: movePlayer.getPoints()
@@ -263,6 +272,35 @@ function onMovePlayer(data) {
 			id: movePlayer.id,
 			points: movePlayer.getPoints()
 		});
+
+		if (movePlayer.getPoints() === maxPoints) {
+			gameFinished = true;
+			winner = movePlayer.getNumber();
+
+			this.emit("game finished", {
+				winner: winner
+			});
+			this.broadcast.emit("game finished", {
+				winner: winner
+			});
+		} else {
+
+			newX = Math.round(Math.random()*(data.width-5));
+			newY = Math.round(Math.random()*(data.height-5));
+
+			gold.setX(newX);
+			gold.setY(newY);
+
+			this.broadcast.emit('spawn gold', {
+				x: gold.getX(),
+				y: gold.getY()
+			});
+
+			this.emit('spawn gold', {
+				x: gold.getX(),
+				y: gold.getY()
+			});
+		}
 	}
 
 	// Broadcast updated position to connected socket clients
