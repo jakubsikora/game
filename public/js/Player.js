@@ -1,5 +1,5 @@
 /**
- *
+ * Obiekt gracza
  */
 var Player = function(startX, startY) {
 	var x = startX,
@@ -11,7 +11,6 @@ var Player = function(startX, startY) {
 			number,
 			admin = false;
 
-	// Getters and setters
 	var getX = function() {
 		return x;
 	};
@@ -60,28 +59,32 @@ var Player = function(startX, startY) {
 		admin = newAdmin;
 	};
 
-	// Update player position
+	// Zmien pozycje gracza
 	var update = function(keys, canvas) {
 
-		// Previous position
+		// Poprzednia pozycja
 		var prevX = x,
 				prevY = y;
 
-		// Up key takes priority over down
+		// Ruch gracza w gore
 		if (keys.up) {
 			y -= moveAmount;
-		} else if (keys.down) {
+		}
+		// Ruch gracza w dol
+		else if (keys.down) {
 			y += moveAmount;
 		}
 
-		// Left key takes priority over right
+		// Ruch gracza w lewo
 		if (keys.left) {
 			x -= moveAmount;
-		} else if (keys.right) {
+		}
+		// Ruch gracza w prawo
+		else if (keys.right) {
 			x += moveAmount;
 		}
 
-		// Check canvas borders
+		// Sprawdzenie granic planszy
 		if (x > canvas.clientWidth) {
 			x = x % canvas.clientWidth;
 		} else if (x < 0) {
@@ -97,7 +100,7 @@ var Player = function(startX, startY) {
 		return (prevX !== x || prevY !== y) ? true : false;
 	};
 
-	// Draw player
+	// Rysowanie gracza na planszy
 	var draw = function(ctx, localPlayer, finished) {
 		var css,
 				html;
@@ -108,6 +111,7 @@ var Player = function(startX, startY) {
 			css = 'color:' + color + ';';
 		}
 
+		// Update HUD-a
 		html =  '<div style="padding:5px;' + css + '">';
 		html += '	<div style="display:inline;">Gracz ' + number  + '</div>';
 		html += '	<div style="display:inline;">, Punkty (' + points  + ')</div>';
@@ -116,13 +120,13 @@ var Player = function(startX, startY) {
 
 		document.getElementById('hud').innerHTML += html;
 
+		// Jezeli gra niezakonczona
 		if (!finished) {
 			ctx.fillStyle = color;
 			ctx.fillRect(x-5, y-5, 10, 10);
 		}
 	};
 
-	// Define which variables and methods can be accessed
 	return {
 		getX: getX,
 		getY: getY,

@@ -1,98 +1,103 @@
 /**
- *
+ * Deklaracja zmiennych klienta
  */
-var canvas,			// Canvas DOM element
-		ctx,			// Canvas rendering context
-		keys,			// Keyboard input
+ 		// Canvas
+var canvas,
+		// Context
+		ctx,
+		// Obiekt dla klawiatury
+		keys,
 		serverFull = false,
-		localPlayer,	// Local player
-		remotePlayers,	// Remote players
-		socket,			// Socket connection
+		// Zmienna dla lokalnego gracza
+		localPlayer,
+		// Zmienna dla zdalnych graczy
+		remotePlayers,
+		socket,
 		gold,
+		// Szerokosc planszy
 		CANVAS_WIDTH = 800,
+		// Wysokosc planszy
 		CANVAS_HEIGHT = 500,
 		gameFinished = false,
 		winner;
 
 /**
- *
+ * Inicjalizacja klienta
  */
 function init() {
-	// Declare the canvas and rendering context
+	// Deklaracja planszy gry
 	canvas = document.getElementById("gameCanvas");
 	ctx = canvas.getContext("2d");
 
-	// Maximise the canvas
+	// Ustaw szerokosc i wysokosc planszy
 	canvas.width = CANVAS_WIDTH;
 	canvas.height = CANVAS_HEIGHT;
 
-	// Initialise keyboard controls
+	// Inicjalizacja klawiszy
 	keys = new Keys();
 
-	// Calculate a random start position for the local player
-	// The minus 5 (half a player size) stops the player being
-	// placed right on the egde of the screen
+	// Losowa pozycja gracza
 	var startX = Math.round(Math.random()*(canvas.width-5)),
 			startY = Math.round(Math.random()*(canvas.height-5));
 
-	// Initialise the local player
+	// Inicjalizacja lokaknego gracza
 	localPlayer = new Player(startX, startY);
 
-	// Initialise socket connection
+	// Ustalanie polaczenia klienta z serwerem
+	// Uzywamy aktualnego adresu gracza gdyz klient i serwer sa na tym samym serwerze
 	socket = io.connect(window.location.hostname);
 
-	// Initialise remote players array
+	// Ustaw globalna tablice zdalnych graczy
 	remotePlayers = [];
 
-	// Start listening for events
+	// Ustaw wydarzenia
 	setEventHandlers();
 };
 
 /**
- *
+ * Ustaw wydarzenia klienta
  */
 function setEventHandlers() {
-	// Keyboard
+	// Klawiatura
 	window.addEventListener("keydown", onKeydown, false);
 	window.addEventListener("keyup", onKeyup, false);
 
-	// Socket connection successful
+	// Polaczenie do socket.io
 	socket.on("connect", onSocketConnected);
 
-	// Socket disconnection
-	socket.on("disconnect", onSocketDisconnect);
-
+	// Serwer pelny
 	socket.on("server full", onServerFull);
 
-	// New player message received
+	// Nowy gracz
 	socket.on("new player", onNewPlayer);
 
-	// Player move message received
+	// Nowa pozycja gracza
 	socket.on("move player", onMovePlayer);
 
-	// Player removed message received
+	// Gracz usuniety
 	socket.on("remove player", onRemovePlayer);
 
-	// Reset game
+	// Reset gry
 	socket.on("reset game", onResetGame);
 
-	// Initialization of the local player
+	// Inicjalizacja gracza
 	socket.on("init player", onInitPlayer);
 
-	// Spawning new gold
+	// Spawn monety
 	socket.on("spawn gold", onSpawnGold);
 
-	// Update admin status
+	// Zmiana admina
 	socket.on("update admin", onUpdateAdmin);
 
-	// Update points
+	// Zmiana punktow
 	socket.on("update points", onUpdatePoints);
 
+	// Gra zakonczona
 	socket.on("game finished", onGameFinished);
 };
 
 /**
- *
+ * Funkcja ktora powoduje animacje na planszy
  */
 function animate() {
 	if (serverFull) {
@@ -106,24 +111,27 @@ function animate() {
 		localPlayer.draw(ctx, true, gameFinished);
 
 	} else {
+		// Zmiany na planszy
 		update();
+
+		// Rysuj zmiany na planszy
 		draw();
 	}
 
-	// Request a new animation frame using Paul Irish's shim
+	// Nowa klatka animacji
 	window.requestAnimFrame(animate);
 };
 
 /**
- *
+ * Zmiany na planszy
  */
 function update() {
 	var collision = false;
 
-	// Update local player and check for change
+	// Zmiany lokalnego klienta
 	if (localPlayer.update(keys, canvas)) {
 
-		// Check collision
+		// Sprawdz czy gracz koliduje z moneta
 		if (gold) {
 			if (
 				localPlayer.getX() <= (gold.getX() + 10)
@@ -136,7 +144,7 @@ function update() {
 			}
 		}
 
-		// Send local player data to the game server
+		// Wyslij dane do serwera z nowa pozycja gracza
 		socket.emit("move player", {
 			x: localPlayer.getX(),
 			y: localPlayer.getY(),
@@ -148,17 +156,19 @@ function update() {
 };
 
 /**
- *
+ * Rysowanie na planszy
  */
 function draw() {
-	// Wipe the canvas clean
+	// Wyczysc plansze
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+	// Wyczysc HUD-a
 	document.getElementById('hud').innerHTML = '';
 
-	// Draw the local player
+	// Rysuj lokalnego gracza na planszy
 	localPlayer.draw(ctx, true);
 
-	// Draw the remote players
+	// Rysuj zdalnych graczy na planszy
 	var i;
 	for (i = 0; i < remotePlayers.length; i++) {
 		remotePlayers[i].draw(ctx, false);
@@ -170,13 +180,14 @@ function draw() {
 		document.getElementById('reset').style.display = 'none';
 	}
 
+	// Rysuj monety na planszy
 	if (gold) {
 		gold.draw(ctx);
 	}
 };
 
 /**
- *
+ * Ustaw nowa pozycji monety
  */
 function spawnGold() {
 	var startX = Math.round(Math.random()*(canvas.width-5)),
@@ -184,11 +195,12 @@ function spawnGold() {
 
 	gold = new Gold(startX, startY);
 
+	// Wyslij informacje o monecie do serwera
 	socket.emit("spawn gold", {x: gold.getX(), y: gold.getY()});
 }
 
 /**
- *
+ * Resetowanie gry
  */
 function reset() {
 	spawnGold();

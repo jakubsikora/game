@@ -1,9 +1,8 @@
 /**
- *
+ * Polaczenie do serwera
  */
 function onSocketConnected() {
-  console.log("Connected to socket server");
-  // Send local player data to the game server
+  // Wyslij informacje do serwera
   socket.emit("new player", {
     x: localPlayer.getX(),
     y: localPlayer.getY(),
@@ -12,19 +11,9 @@ function onSocketConnected() {
 };
 
 /**
- *
- */
-function onSocketDisconnect() {
-  console.log("Disconnected from socket server");
-};
-
-/**
- *
+ * Polaczenie zdalnego gracza
  */
 function onNewPlayer(data) {
-  console.log("New player connected: "+data.id);
-
-  // Initialise the new player
   var newPlayer = new Player(data.x, data.y);
   newPlayer.id = data.id;
   newPlayer.setNumber(data.number);
@@ -32,29 +21,28 @@ function onNewPlayer(data) {
   newPlayer.setPoints(data.points);
   newPlayer.setColor(data.color);
 
-  // Add new player to the remote players array
+  // Dodaj nowego gracza do listy zdalnych graczy
   remotePlayers.push(newPlayer);
 };
 
 /**
- *
+ * Zmiana pozycji gracza
  */
 function onMovePlayer(data) {
   var movePlayer = playerById(data.id);
 
-  // Player not found
+  // Gracz nieznaleziony
   if (!movePlayer) {
-    console.log("Player not found: "+data.id);
+    console.log("Gracz nieznaleziony: " + data.id);
     return;
   };
 
-  // Update player position
   movePlayer.setX(data.x);
   movePlayer.setY(data.y);
 };
 
 /**
- *
+ * Spawn monety
  */
 function onSpawnGold(data) {
   if (gold) {
@@ -66,7 +54,7 @@ function onSpawnGold(data) {
 }
 
 /**
- *
+ * Inicjalizacja lokalnego gracza
  */
 function onInitPlayer(data) {
   localPlayer.setNumber(data.number);
@@ -81,25 +69,22 @@ function onInitPlayer(data) {
 }
 
 /**
- *
+ * Zmiana punktow
  */
 function onUpdatePoints(data) {
-  console.log('updating points', data);
   var playerPoints = playerById(data.id);
   playerPoints.setPoints(data.points);
 }
 
 /**
- *
+ * Zmiana admina
  */
 function onUpdateAdmin(data) {
   var newAdmin = playerById(data.id);
 
-  console.log('onUpdateAdmin', newAdmin);
-
-  // Player not found
+  // Gracz nieznaleziony
   if (!newAdmin) {
-    console.log("Player not found: "+data.id);
+    console.log("Gracz nieznaleziony: "+data.id);
     return;
   };
 
@@ -107,23 +92,23 @@ function onUpdateAdmin(data) {
 }
 
 /**
- *
+ * Rozlaczenie zdalnego gracza
  */
  function onRemovePlayer(data) {
   var removePlayer = playerById(data.id);
 
-  // Player not found
+  // Gracz nieznaleziony
   if (!removePlayer) {
-    console.log("Player not found: "+data.id);
+    console.log("Gracz nieznaleziony: "+data.id);
     return;
   };
 
-  // Remove player from array
+  // Uzyj gracza z listy zdalnych graczy
   remotePlayers.splice(remotePlayers.indexOf(removePlayer), 1);
 };
 
 /**
- *
+ * Wcisniecie klawisza
  */
 function onKeydown(e) {
   if (localPlayer) {
@@ -132,7 +117,7 @@ function onKeydown(e) {
 };
 
 /**
- *
+ * Wycisniecie klawisza
  */
 function onKeyup(e) {
   if (localPlayer) {
@@ -141,13 +126,12 @@ function onKeyup(e) {
 };
 
 /**
- *
+ * Reset gry
  */
 function onResetGame() {
   gameFinished = false;
   winner = null;
 
-  // Reset and send new position
   var startX = Math.round(Math.random()*(canvas.width-5)),
       startY = Math.round(Math.random()*(canvas.height-5));
 
@@ -159,14 +143,14 @@ function onResetGame() {
 };
 
 /**
- *
+ * Pelny serwer
  */
 function onServerFull() {
   serverFull = true;
 }
 
 /**
- *
+ * Gra zakonczona
  */
 function onGameFinished(data) {
   gameFinished = true;

@@ -1,181 +1,209 @@
 /**
- *
+ * Deklaracja zmiennych serwera
  */
 var express = require("express"),
 		path = require("path"),
 		app = express(),
 		server = require("http").createServer(app),
-		util = require("util"),					// Utility resources (logging, object inspection, etc)
-		io = require("socket.io").listen(server),				// Socket.IO
-		Player = require("./Player").Player;	// Player class
-		Gold = require("./Gold").Gold;	// Gold class
+		// Biblioteka wykorzystana do logow serwera
+		util = require("util"),
+		// Socket IO
+		io = require("socket.io").listen(server),
+		// Klasa gracza
+		Player = require("./Player").Player,
+		// Klasa monety
+		Gold = require("./Gold").Gold;
 
+// Serwer bedzie dzialal na danym porcie
 server.listen(process.env.PORT || 3000);
 
+// Serwer bedzie czytal z folderu public
 app.use(express.static(path.join(__dirname,'public')));
 
 /**
- *
+ * Deklaracja zmiennych dla gry
  */
-var players = [],	// Array of connected players
+		// Tablica polaczonych graczy
+var players = [],
+		// Tablica dostepnych kolorow
 		colors = ['red', 'green', 'blue', 'orange', 'black', 'pink'],
+		// Tablica wykorzystaych kolorow
 		usedColors = [],
+		// Moneta
 		gold = null,
+		// Aktualny numer gracza
 		playerNumber = 1,
+		// Maksymalna liczba graczy na serwerze
 		maxPlayers = 2,
+		// Stan gry
 		gameFinished = false,
+		// Maksymalna liczba punktow
 		maxPoints = 5,
-		winner;
+		// Gracz ktory wygral
+		winner = null;
 
 /**
- *
+ * Inicjalizacja serwera
  */
 function init() {
-	// Create an empty array to store players
-	players = [];
-
-	// Configure Socket.IO
+	// Konfiguracja Socket.IO
 	io.configure(function() {
-		// Only use WebSockets
+		// Uzywaj tylko WebSockets
 		io.set("transports", ["websocket"]);
 
-		// Restrict log output
+		// Poziom logowania serwera
 		io.set("log level", 2);
 	});
 
-	// Start listening for events
+	// Ustaw wydarzenia
 	setEventHandlers();
-
 };
 
 /**
- *
+ * Ustawienie wydarzen serwera
  */
 var setEventHandlers = function() {
-	// Socket.IO
+	// Handler dla wszystkich polaczen Socket.IO
 	io.sockets.on("connection", onSocketConnection);
 };
 
 /**
- *
+ * Ustaw wydarzenia po polaczniu gracza
  */
 function onSocketConnection(client) {
-	if (players.length === maxPlayers) {
-		// Listen for new player message
-		client.on("new player", onNewPlayer);
+	// Sluchaj laczenia nowego gracza
+	client.on("new player", onNewPlayer);
 
-	} else {
-		util.log("New player has connected: "+client.id);
+	// Sprawdz czy liczba graczy nie przekroczyla limit
+	if (players.length < maxPlayers) {
+		util.log("New gracz polaczony: " + client.id);
 
-		// Listen for client disconnected
+		// Sluchaj rozlaczen graczy
 		client.on("disconnect", onClientDisconnect);
 
-		// Listen for new player message
-		client.on("new player", onNewPlayer);
-
-		// Listen for move player message
+		// Sluchaj zmian pozycji gracza
 		client.on("move player", onMovePlayer);
 
-		// Listen for reset game message
+		// Sluchaj resetow gry
 		client.on("reset game", onResetGame);
 
+		// Sluchaj zmiany pozycji zlota
 		client.on("spawn gold", onSpawnGold);
 	}
 };
 
 /**
- *
+ * Reset serwera
  */
 function onResetGame() {
 	var player = playerById(this.id),
 			existingPlayer;
 
+	// Sprawdz czy gracz jest adminem
 	if (player.getAdmin()) {
 		for (var i = 0; i < players.length; i++) {
 			existingPlayer = players[i];
+			// Wyzeruj punkty graczy
 			existingPlayer.setPoints(0);
 
+			// Wyslij dane do klienta o punktach
 			this.emit("update points", {
 				id: existingPlayer.id,
 				points: existingPlayer.getPoints()
 			});
 
+			// Wyslij dane do pozostalych klientow
 			this.broadcast.emit("update points", {
 				id: existingPlayer.id,
 				points: existingPlayer.getPoints()
 			});
 		}
 
-		this.broadcast.emit("reset game");
+		// Wyslij informacje o resecie do klienta
 		this.emit("reset game");
+
+		// Wyslij informacje o resecie gry do pozostalych klientow
+		this.broadcast.emit("reset game");
+
+		// Resetuj stan gry oraz zwyciezcy
 		gameFinished = false;
 		winner = null;
 
-		util.log("Game reseted");
+		util.log("Gra zresetowana");
 	}
 };
 
 /**
- *
+ * Rozlaczenie gracza
  */
 function onClientDisconnect() {
-	util.log("Player has disconnected: "+this.id);
+	util.log("Gracz sie rozlaczyl: " + this.id);
 
 	var removePlayer = playerById(this.id);
 
-	// Player not found
+	// Gracz nieznaleziony
 	if (!removePlayer) {
-		util.log("Player not found: "+this.id);
+		util.log("Gracz nieznaleziony: "+this.id);
 		return;
 	};
 
+	// Usun uzyty kolor
 	usedColors.splice(usedColors.indexOf(removePlayer.getColor()), 1);
 
-	// Remove player from players array
+	// Usun gracza z globalnej tablicy graczy
 	players.splice(players.indexOf(removePlayer), 1);
 
-	// Broadcast removed player to connected socket clients
+	// Wyslij informacje o rozlaczonym graczu do pozostalych klientow
 	this.broadcast.emit("remove player", {id: this.id});
 
 	if (players.length === 0) {
 		gold = null;
 	} else {
+		// Jezeli rozlaczony gracz byl adminem, przypisz admina do nastepnego w kolejnosci
 		if (removePlayer.getAdmin()) {
 			players[0].setAdmin(true);
+
+			// Wyslij informacje o nowym adminie do pozostalych klientow
 			this.broadcast.emit("update admin", {id: players[0].id});
 		}
 	}
 };
 
 /**
- *
+ * Polaczenie nowego gracza
  */
 function onNewPlayer(data) {
-	// Check max players
+	// Sprawdz czy nie przekroczono limitu
 	if (players.length === maxPlayers) {
+		// Wyslij informacje do klienta o tym ze serwer jest pelny
 		this.emit("server full");
 	} else {
+		// Sprawdz czy gra nie jest zakonczona
 		if (gameFinished) {
 			this.emit("game finished", {
 				winner: winner
 			});
 		} else {
-			// Create a new player
+			// Stworz nowego gracza
 			var newPlayer = new Player(data.x, data.y),
+					// Przypisz kolor
 					newColor = selectColor(),
+					// Aktualnie polaczeni gracze
 					existingPlayer;
 
+			// Przypisz podstawowe dane gracza (id, numer, admina, punkty, kolor)
 			newPlayer.id = this.id;
 			newPlayer.setNumber(playerNumber);
 			newPlayer.setAdmin(playerNumber === 1 ? true : false);
 			newPlayer.setPoints(0);
 			newPlayer.setColor(newColor);
 
-			// Admin fallback
+			// Jezeli serwer jest jeszcze pusty gracz bedzie adminem
 			if (players.length === 0) {
 				newPlayer.setAdmin(true);
 			}
 
+			// Wyslij informacje do klienta
 			this.emit("init player", {
 				number: newPlayer.getNumber(),
 				admin: newPlayer.getAdmin(),
@@ -184,6 +212,7 @@ function onNewPlayer(data) {
 				color: newPlayer.getColor()
 			});
 
+			// Wyslij informacje do klienta o monecie
 			if (gold) {
 				this.emit('spawn gold', {
 					x: gold.getX(),
@@ -191,7 +220,7 @@ function onNewPlayer(data) {
 				});
 			}
 
-			// Broadcast new player to connected socket clients
+			// Wyslij informacje o nowym graczu do pozostalych klientow
 			this.broadcast.emit("new player", {
 				id: newPlayer.id,
 				x: newPlayer.getX(),
@@ -202,7 +231,7 @@ function onNewPlayer(data) {
 				points: newPlayer.getPoints()
 			});
 
-			// Send existing players to the new player
+			// Wyslij informacje o pozostalych graczach do klienta
 			for (var i = 0; i < players.length; i++) {
 				existingPlayer = players[i];
 
@@ -217,15 +246,17 @@ function onNewPlayer(data) {
 				});
 			};
 
-			// Add new player to the players array
+			// Dodaj gracza do globalnej tablicy
 			players.push(newPlayer);
+
+			// Zwieksz numer gracza
 			playerNumber++;
 		}
 	}
 };
 
 /**
- *
+ * Wylosuj kolor
  */
 function selectColor() {
 	var newColor = colors[Math.floor(Math.random() * colors.length)];
@@ -241,7 +272,7 @@ function selectColor() {
 }
 
 /**
- *
+ * Zmiana pozycji gracza
  */
 function onMovePlayer(data) {
 	// Find player in array
@@ -249,61 +280,70 @@ function onMovePlayer(data) {
 			newX,
 			newY;
 
-	// Player not found
+	// Gracz nieznaleziony
 	if (!movePlayer) {
-		util.log("Player not found: "+this.id);
+		util.log("Gracz nieznaleziony: "+this.id);
 		return;
 	};
 
-	// Update player position
+	// Updatuje pozycje gracza
 	movePlayer.setX(data.x);
 	movePlayer.setY(data.y);
 
-	// Collision
+	// Sprawdz kolizje gracza z moneta
 	if (data.collision) {
+		// Zwieksz punkty
 		movePlayer.increasePoints();
 
+		// Wyslij informacje o zmianie punktow do klienta
 		this.emit("update points", {
 			id: movePlayer.id,
 			points: movePlayer.getPoints()
 		});
 
+		// Wyslij informacje o zmianie punktow do pozostalych klientach
 		this.broadcast.emit("update points", {
 			id: movePlayer.id,
 			points: movePlayer.getPoints()
 		});
 
+		// Sprawdz czy osiagnieto maksymalna liczbe puntkow
 		if (movePlayer.getPoints() === maxPoints) {
 			gameFinished = true;
 			winner = movePlayer.getNumber();
 
+			// Wyslij informacje o zwyciezcy do klienta
 			this.emit("game finished", {
 				winner: winner
 			});
+
+			// Wyslij informacje o zwyciezcy do pozostalych klientow
 			this.broadcast.emit("game finished", {
 				winner: winner
 			});
 		} else {
-
+			// Ustaw nowa pozycje monety
 			newX = Math.round(Math.random()*(data.width-5));
 			newY = Math.round(Math.random()*(data.height-5));
 
 			gold.setX(newX);
 			gold.setY(newY);
 
-			this.broadcast.emit('spawn gold', {
+			// Wyslij informacje o nowej monety do klienta
+			this.emit('spawn gold', {
 				x: gold.getX(),
 				y: gold.getY()
 			});
 
-			this.emit('spawn gold', {
+			// Wyslij informacje o nowej monety do pozostalych klientow
+			this.broadcast.emit('spawn gold', {
 				x: gold.getX(),
 				y: gold.getY()
 			});
 		}
 	}
 
-	// Broadcast updated position to connected socket clients
+	// Wyslij informacje o pozycji gracza do pozostalych klientow
 	this.broadcast.emit("move player", {
 		id: movePlayer.id,
 		x: movePlayer.getX(),
@@ -312,7 +352,7 @@ function onMovePlayer(data) {
 };
 
 /**
- *
+ * Spawnowanie zlota
  */
 function onSpawnGold(data) {
 	var player = playerById(this.id);
@@ -325,6 +365,7 @@ function onSpawnGold(data) {
 			gold = new Gold(data.x, data.y);
 		}
 
+		// Wyslij informacje o nowej monety do pozostalych klientow
 		this.broadcast.emit('spawn gold', {
 			x: gold.getX(),
 			y: gold.getY()
@@ -333,7 +374,7 @@ function onSpawnGold(data) {
 };
 
 /**
- *
+ * Pomocnicza funkcja do szukania graczy z danym id
  */
 function playerById(id) {
 	for (var i = 0; i < players.length; i++) {
@@ -345,14 +386,13 @@ function playerById(id) {
 };
 
 /**
- *
+ * Pomocnicza funkcja do roznicy tablic
  */
 Array.prototype.diff = function(a) {
   return this.filter(function(i) {return a.indexOf(i) < 0;});
 };
 
-
 /**
- *
+ * Wywolaj inicjalizacje
  */
 init();

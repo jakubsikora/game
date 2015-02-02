@@ -1,6 +1,6 @@
-/**************************************************
-** GAME GOLD CLASS
-**************************************************/
+/**
+ * Obiekt monety
+ */
 var Gold = function(startX, startY) {
   var x = startX,
       y = startY;
@@ -39,7 +39,6 @@ var Gold = function(startX, startY) {
     ctx.fillText('£', x, y+3);
   };
 
-  // Define which variables and methods can be accessed
   return {
     getX: getX,
     getY: getY,

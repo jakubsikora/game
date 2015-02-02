@@ -1,6 +1,6 @@
-/**************************************************
-** GAME PLAYER CLASS
-**************************************************/
+/**
+ * Obiekt gracza
+ */
 var Player = function(startX, startY, startColor) {
 	var x = startX,
 			y = startY,
@@ -10,7 +10,6 @@ var Player = function(startX, startY, startColor) {
 			admin = false,
 			points;
 
-	// Getters and setters
 	var getX = function() {
 		return x;
 	};
@@ -63,7 +62,7 @@ var Player = function(startX, startY, startColor) {
 		points = points + 1;
 	};
 
-	// Define which variables and methods can be accessed
+	// Definicja funkcji ktore beda dostepne publicznie
 	return {
 		getX: getX,
 		getY: getY,
@@ -83,6 +82,5 @@ var Player = function(startX, startY, startColor) {
 	};
 };
 
-// Export the Player class so you can use it in
-// other files by using require("Player").Player
+// Eksportuj obiekt by byl dostepny z poziomu serwera
 exports.Player = Player;

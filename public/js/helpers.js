@@ -1,5 +1,5 @@
 /**
- *
+ * Pomocnicza funkcja do szukania graczy z danym id
  */
 function playerById(id) {
   for (var i = 0; i < remotePlayers.length; i++) {

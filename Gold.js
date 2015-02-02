@@ -1,6 +1,6 @@
-/**************************************************
-** GAME GOLD CLASS
-**************************************************/
+/**
+ * Obiekt monety
+ */
 var Gold = function(startX, startY) {
   var x = startX,
       y = startY;
@@ -22,7 +22,7 @@ var Gold = function(startX, startY) {
     y = newY;
   };
 
-  // Define which variables and methods can be accessed
+  // Definicja funkcji ktore beda dostepne publicznie
   return {
     getX: getX,
     getY: getY,
@@ -31,6 +31,5 @@ var Gold = function(startX, startY) {
   };
 };
 
-// Export the Player class so you can use it in
-// other files by using require("Gold").Gold
+// Eksportuj obiekt by byl dostepny z poziomu serwera
 exports.Gold = Gold;
